@@ -1,2 +1,2 @@
-# smartueom
-C programming on Ubuntu Linux
+# TcpComm
+TCP/IP Server and Client Program on Ubuntu Linux.
