@@ -15,7 +15,7 @@
 #define STR_PW "1234"
 #define STR_DB "factory"
 
-int readDB(MYSQL * mysql, char * buf, int size, int num);
+int readDB(MYSQL * mysql, char * msg);
 int init(MYSQL * mysql);
 void destroy(MYSQL * mysql);
 void executeQuery(MYSQL * mysql, char * query);
@@ -26,6 +26,8 @@ void error_handling(char *  msg);
 int clnt_cnt = 0;
 int clnt_socks[MAX_CLNT];
 pthread_mutex_t mutx;
+MYSQL mysql;
+char buf_field[256] = "";
 
 int main(int argc, char * argv[])
 {
@@ -52,13 +54,13 @@ int main(int argc, char * argv[])
 	if(listen(serv_sock,5)==-1)
 		error_handling("listen() error");
 
-	MYSQL mysql;
+
 	init(&mysql);
-	char buf[256];
-	int num = 0;
-	printf("When do you want to search?: ");
-	scanf("%d", &num);
-	readDB(&mysql, buf, 256, num);
+	//char buf[256];
+//	int num = 0;
+//	printf("When do you want to search?: ");
+//	scanf("%d", &num);
+//	readDB(&mysql, buf, 256, num);
 
 	while(1)
 	{
@@ -84,8 +86,14 @@ void * handle_clnt(void * arg)
 	int str_len = 0, i;
 	char msg[BUF_SIZE];
 	
-	while((str_len = read(clnt_sock, msg, sizeof(msg)))!=0)
-		send_msg(msg, str_len);
+	while((str_len = read(clnt_sock, msg, BUF_SIZE))!=0)
+	{
+		printf("Message from client: %s", msg);
+		readDB(&mysql, msg);               	
+		send_msg(buf_field, str_len=read(clnt_sock, buf_field, 256));
+ 	}
+	
+	
 
 	pthread_mutex_lock(&mutx);
 	for(i=0; i<clnt_cnt; i++)
@@ -118,10 +126,11 @@ int init(MYSQL * mysql)
 	}
 }
 
-int readDB(MYSQL * mysql, char * buf, int size, int num)
+int readDB(MYSQL * mysql, char * msg)
 {
 	char stringQuery[255] = "";
-	buf[0] = 0;
+	//buf_field = "";
+	int num = atoi(msg);
 
 	sprintf(stringQuery, "SELECT p_num, p_output, p_date, p_time FROM factory WHERE p_num = %d;", num);
 
@@ -138,16 +147,13 @@ int readDB(MYSQL * mysql, char * buf, int size, int num)
 		unsigned int field_count = 0;
 		while(field_count<mysql_field_count(mysql))
 		{
-			char buf_field[256]="";
 			if(sqlRow[field_count])
 				sprintf(buf_field, "|%s", sqlRow[field_count]);
 			else sprintf(buf_field, "|0");
 		
-			printf("%s", buf_field);	
 			field_count++;
 		}
-		printf("\n");
-		
+		send_msg(buf_field, sizeof(buf_field));	
 		if(mysql_errno(mysql))
 		{
 			fprintf(stderr, "Error: %s\n", mysql_error(mysql));
