@@ -53,37 +53,13 @@ int main(int argc, char * argv[])
 		error_handling("listen() error");
 
 	MYSQL mysql;
-//	MYSQL_RES * myresult;
-//	MYSQL_ROW row;
-//	unsined int num_fields;
-//	unsigned int num_rows;
-	char buf[255];
 	init(&mysql);
-	readDB(&mysql, buf, 255, 15);
+	char buf[256];
+	int num = 0;
+	printf("When do you want to search?: ");
+	scanf("%d", &num);
+	readDB(&mysql, buf, 256, num);
 
-/*	if(!mysql_real_connect(mysql, STR_HOST, STR_ID, STR_PW, STR_DB, 0, NULL, 0))
-	{printf("Connect ERROR");
-	}
-	else
-	{
-		printf("Connected with FACTORY DB");
-	}
-
-	sprintf(buf, "%s", "show tables;");
-	if(mysql_query(mysql, buf))
-	{
-		printf("Query faild : %s\n", buf);
-		exit(1);
-	}
-
-	myresult = mysql_use_result(mysql);
-	while ((row = mysql_fetch_row(myresult)) != NULL)
-		printf("%s \n", row[0]);
-*/
-
-//	mysql_free_resule(myresult);
-//	mysql_close(mysql);
-	
 	while(1)
 	{
 		clnt_adr_sz = sizeof(clnt_adr);
@@ -149,8 +125,8 @@ int readDB(MYSQL * mysql, char * buf, int size, int num)
 
 	sprintf(stringQuery, "SELECT p_num, p_output, p_date, p_time FROM factory WHERE p_num = %d;", num);
 
-	int res = mysql_query(mysql, stringQuery);
-	if(res !=0)
+	int result = mysql_query(mysql, stringQuery);
+	if(result !=0)
 	{
 		return -1;
 	}
@@ -158,6 +134,7 @@ int readDB(MYSQL * mysql, char * buf, int size, int num)
 	{
 		MYSQL_RES * res_ptr = mysql_use_result(mysql);
 		MYSQL_ROW sqlRow = mysql_fetch_row(res_ptr);
+		
 		unsigned int field_count = 0;
 		while(field_count<mysql_field_count(mysql))
 		{
@@ -165,16 +142,17 @@ int readDB(MYSQL * mysql, char * buf, int size, int num)
 			if(sqlRow[field_count])
 				sprintf(buf_field, "|%s", sqlRow[field_count]);
 			else sprintf(buf_field, "|0");
-			strcat(buf, buf_field);
+		
+			printf("%s", buf_field);	
 			field_count++;
 		}
+		printf("\n");
 		
 		if(mysql_errno(mysql))
 		{
 			fprintf(stderr, "Error: %s\n", mysql_error(mysql));
 			return -1;
 		}
-		
 		mysql_free_result(res_ptr);
 	}
 	return 0;
